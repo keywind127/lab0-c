@@ -14,7 +14,14 @@
 /* Create an empty queue */
 struct list_head *q_new()
 {
-    return NULL;
+    struct list_head *newHead = malloc(sizeof(struct list_head));
+
+    if (!newHead)
+        return NULL;
+
+    INIT_LIST_HEAD(newHead);
+
+    return newHead;
 }
 
 /* Free all storage used by queue */
@@ -23,6 +30,38 @@ void q_free(struct list_head *head) {}
 /* Insert an element at head of queue */
 bool q_insert_head(struct list_head *head, char *s)
 {
+    struct list_head *newHead =
+        (struct list_head *) malloc(sizeof(struct list_head));
+
+    // newHead memory allocation failed
+    if (!newHead)
+        return false;
+
+    element_t *newElement = (element_t *) malloc(sizeof(element_t));
+
+    // newElement memory allocation failed
+    if (!newElement)
+        return false;
+
+    // initialize value and node for newElement
+    newElement->value = s;
+    newElement->list = *newHead;
+
+    // track first node in queue (excluding head)
+    struct list_head *nextHead = head->next;
+
+    head->next = newHead;
+    newHead->prev = head;
+
+    // empty queue: nextHead points to head itself
+    if (nextHead == head) {
+        head->prev = newHead;
+        newHead->next = head;
+    } else {
+        nextHead->prev = newHead;
+        newHead->next = nextHead;
+    }
+
     return true;
 }
 
