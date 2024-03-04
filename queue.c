@@ -27,8 +27,7 @@ struct list_head *q_new()
 /* Free all storage used by queue */
 void q_free(struct list_head *head) {}
 
-/* Insert an element at head of queue */
-bool q_insert_head(struct list_head *head, char *s)
+struct list_head *create_new_head(char *s)
 {
     struct list_head *newHead =
         (struct list_head *) malloc(sizeof(struct list_head));
@@ -46,6 +45,14 @@ bool q_insert_head(struct list_head *head, char *s)
     // initialize value and node for newElement
     newElement->value = s;
     newElement->list = *newHead;
+
+    return newHead;
+}
+
+/* Insert an element at head of queue */
+bool q_insert_head(struct list_head *head, char *s)
+{
+    struct list_head *newHead = create_new_head(s);
 
     // track first node in queue (excluding head)
     struct list_head *nextHead = head->next;
@@ -68,19 +75,96 @@ bool q_insert_head(struct list_head *head, char *s)
 /* Insert an element at tail of queue */
 bool q_insert_tail(struct list_head *head, char *s)
 {
+    struct list_head *newHead = create_new_head(s);
+
+    // struct list_head * tailNode = head;
+
+    // for (; tailNode->next != head; tailNode = tailNode->next);
+
+    // instead of iterating through queue, access tail node directly from head
+    // (doubly linked-list, head->prev == tailNode)
+    struct list_head *tailNode = head->prev;
+
+    head->prev = newHead;
+    newHead->next = head;
+
+    // empty queue -> same as insert head
+    if (tailNode == head) {
+        head->next = newHead;
+        newHead->prev = head;
+    } else {
+        tailNode->next = newHead;
+        newHead->prev = tailNode;
+    }
+
     return true;
+}
+
+inline size_t min(size_t val1, size_t val2)
+{
+    return ((val1 < val2) ? (val1) : (val2));
+}
+
+inline void rejoin_neighbors(struct list_head *prev, struct list_head *next)
+{
+    next->prev = prev;
+    prev->next = next;
 }
 
 /* Remove an element from head of queue */
 element_t *q_remove_head(struct list_head *head, char *sp, size_t bufsize)
 {
-    return NULL;
+    // empty queue -> cannot remove element
+    // if (head->next == head)
+    if (list_empty(head))
+        return NULL;
+
+    // retrieve element data of first node using helper macro function
+    element_t *elementData = list_entry(head->next, element_t, list);
+
+    // prev of next of first node should point to head
+    // next of head should point to next of first node
+    rejoin_neighbors(head, head->next->next);
+
+    // store string from element data into buffer
+    memcpy(sp, elementData->value,
+           min(bufsize, strlen(elementData->value)) * sizeof(char));
+
+    return elementData;
+
+    // struct list_head *cur = head;
+
+    // element_t *elementData, *nextNode, *prevNode;
+
+    // for (; cur->next != head; cur = cur->next) {
+    //     elementData = list_entry(cur, element_t, list);
+    //     if (!strcmp(elementData->value, sp)) {
+    //         prevNode = cur->prev;
+    //         nextNode = cur->next;
+    //         prevNode->next = nextNode;
+    //         nextNode->prev = prevNode;
+    //         return elementData;
+    //     }
+    // }
 }
 
 /* Remove an element from tail of queue */
 element_t *q_remove_tail(struct list_head *head, char *sp, size_t bufsize)
 {
-    return NULL;
+    // cannot remove tail if queue empty
+    // if (head->prev == head)
+    if (list_empty(head))
+        return NULL;
+
+    element_t *elementData = list_entry(head->prev, element_t, list);
+
+    rejoin_neighbors(head->prev->prev, head);
+
+    // store string from element data into buffer
+    memcpy(sp, elementData->value,
+           min(bufsize, strlen(elementData->value)) * sizeof(char));
+
+    return elementData;
 }
 
 /* Return number of elements in queue */
